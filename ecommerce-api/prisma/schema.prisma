@@ -1,0 +1,105 @@
+// ================================================================
+// PRISMA SCHEMA — Definisi semua tabel database
+// ================================================================
+// File ini mendefinisikan struktur tabel di MySQL.
+// Setelah mengedit file ini, jalankan: npx prisma db push
+// ================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================================================
+// TABEL: users — Menyimpan data pengguna (admin & customer)
+// ================================================================
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String   // di-hash menggunakan bcrypt
+  role      String   @default("customer") // "admin" atau "customer"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[] // Relasi: 1 user bisa punya banyak order
+
+  @@map("users") // nama tabel di MySQL
+}
+
+// ================================================================
+// TABEL: products — Menyimpan data produk
+// ================================================================
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  specs       String?  @db.Text // Spesifikasi teknis (JSON atau Text)
+  reviews     String?  @db.Text // Review pelanggan (JSON atau Text)
+  category    String
+  price       Float
+  stock       Int      @default(0)
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// ================================================================
+// TABEL: orders — Menyimpan data pesanan
+// ================================================================
+model Order {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  total      Float
+  status     String   @default("Processing") // Processing, Shipped, Delivered, Cancelled
+  courier    String?  // JNE, J&T, SiCepat
+  trackingNo String?  @map("tracking_no")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[] // Relasi: 1 order bisa punya banyak item
+
+  @@map("orders")
+}
+
+// ================================================================
+// TABEL: order_items — Detail item dalam setiap pesanan
+// ================================================================
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int   @map("order_id")
+  productId Int   @map("product_id")
+  quantity  Int
+  price     Float // harga saat pembelian (bisa beda dari harga produk sekarang)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ================================================================
+// TABEL: coupons — Kode kupon dan flash sale
+// ================================================================
+model Coupon {
+  id       Int      @id @default(autoincrement())
+  code     String   @unique
+  type     String   // "Percentage" atau "Fixed"
+  value    Float    // nilai diskon (20 = 20% atau Rp20.000)
+  minOrder Float    @default(0) @map("min_order")
+  uses     Int      @default(0) // berapa kali sudah dipakai
+  active   Boolean  @default(true)
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now())
+
+  @@map("coupons")
+}

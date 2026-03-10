@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    @apply font-sans text-dark bg-white;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-2.5 rounded-md font-medium hover:bg-primary-dark transition-colors duration-200;
+  }
+  .btn-outline {
+    @apply border border-primary text-primary px-6 py-2.5 rounded-md font-medium hover:bg-primary hover:text-white transition-colors duration-200;
+  }
+  .badge {
+    @apply text-xs px-2 py-0.5 rounded font-semibold uppercase tracking-wide;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { @apply bg-gray-100; }
+::-webkit-scrollbar-thumb { @apply bg-gray-400 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-500; }
+
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
