@@ -65,27 +65,32 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ===== START SERVER =====
-app.listen(PORT, () => {
-  console.log('');
-  console.log('========================================');
-  console.log(`🚀 E-Commerce API berjalan di port ${PORT}`);
-  console.log(`📡 http://localhost:${PORT}/api/health`);
-  console.log('========================================');
-  console.log('');
-  console.log('Endpoints tersedia:');
-  console.log('  POST   /api/auth/register');
-  console.log('  POST   /api/auth/login');
-  console.log('  GET    /api/auth/me');
-  console.log('  GET    /api/products');
-  console.log('  POST   /api/products');
-  console.log('  PUT    /api/products/:id');
-  console.log('  DELETE /api/products/:id');
-  console.log('  GET    /api/orders');
-  console.log('  POST   /api/orders');
-  console.log('  PUT    /api/orders/:id/status');
-  console.log('  POST   /api/shipping/calculate');
-  console.log('  GET    /api/promos');
-  console.log('  POST   /api/promos');
-  console.log('  POST   /api/promos/verify');
-  console.log('');
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log('');
+    console.log('========================================');
+    console.log(`🚀 E-Commerce API berjalan di port ${PORT}`);
+    console.log(`📡 http://localhost:${PORT}/api/health`);
+    console.log('========================================');
+    console.log('');
+    console.log('Endpoints tersedia:');
+    console.log('  POST   /api/auth/register');
+    console.log('  POST   /api/auth/login');
+    console.log('  GET    /api/auth/me');
+    console.log('  GET    /api/products');
+    console.log('  POST   /api/products');
+    console.log('  PUT    /api/products/:id');
+    console.log('  DELETE /api/products/:id');
+    console.log('  GET    /api/orders');
+    console.log('  POST   /api/orders');
+    console.log('  PUT    /api/orders/:id/status');
+    console.log('  POST   /api/shipping/calculate');
+    console.log('  GET    /api/promos');
+    console.log('  POST   /api/promos');
+    console.log('  POST   /api/promos/verify');
+    console.log('');
+  });
+}
+
+// Export for Vercel Serverless
+export default app;
