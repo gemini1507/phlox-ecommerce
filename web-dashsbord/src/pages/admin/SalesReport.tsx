@@ -1,31 +1,107 @@
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
-const dailyData = [
-  { day: 'Mon', revenue: 4200, orders: 28 }, { day: 'Tue', revenue: 5800, orders: 36 },
-  { day: 'Wed', revenue: 3900, orders: 24 }, { day: 'Thu', revenue: 6200, orders: 42 },
-  { day: 'Fri', revenue: 7100, orders: 48 }, { day: 'Sat', revenue: 8900, orders: 61 }, { day: 'Sun', revenue: 5400, orders: 35 },
-];
-
-const monthlyData = [
-  { month: 'Jan', revenue: 42000 }, { month: 'Feb', revenue: 58000 }, { month: 'Mar', revenue: 47000 },
-  { month: 'Apr', revenue: 64000 }, { month: 'May', revenue: 71000 }, { month: 'Jun', revenue: 89000 },
-  { month: 'Jul', revenue: 76000 }, { month: 'Aug', revenue: 92000 }, { month: 'Sep', revenue: 68000 },
-  { month: 'Oct', revenue: 85000 }, { month: 'Nov', revenue: 112000 }, { month: 'Dec', revenue: 138000 },
-];
-
-const topProducts = [
-  { rank: 1, name: 'Beats Studio Pro', category: 'Headphones', sales: 248, revenue: '$86,712' },
-  { rank: 2, name: 'Apple Watch S9', category: 'Wearables', sales: 185, revenue: '$73,998' },
-  { rank: 3, name: 'PlayStation 5', category: 'Gaming', sales: 124, revenue: '$61,998' },
-  { rank: 4, name: 'MacBook Pro M3', category: 'Laptops', sales: 67, revenue: '$87,099' },
-  { rank: 5, name: 'Amazon Echo Studio', category: 'Speakers', sales: 312, revenue: '$62,398' },
-];
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { apiFetch } from '../../lib/api';
 
 const chartStyle = {
   contentStyle: { background: '#1c1c1e', border: '1px solid #27272a', borderRadius: '8px', color: '#fff' }
 };
 
 const SalesReport = () => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const data = await apiFetch('/orders');
+        setOrders(data);
+      } catch (err) {
+        console.error('Failed to load orders', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  // Filter only valid orders for revenue computation (assuming 'Cancelled' are usually ignored from revenue)
+  const validOrders = orders.filter(o => o.status !== 'Cancelled');
+
+  // Today Revenue Compute
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todaysRevenue = validOrders
+    .filter(o => new Date(o.createdAt) >= today)
+    .reduce((sum, o) => sum + o.total, 0);
+
+  // This Month Revenue
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const thisMonthRevenue = validOrders
+    .filter(o => new Date(o.createdAt) >= firstDayOfMonth)
+    .reduce((sum, o) => sum + o.total, 0);
+
+  const totalOrders = validOrders.length;
+  const avgOrderValue = totalOrders > 0 ? (validOrders.reduce((sum, o) => sum + o.total, 0) / totalOrders) : 0;
+
+  // Compute Weekly Daily Data (Similar to dashboard)
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dailyData = Array(7).fill(0).map((_, i) => ({ day: days[i], revenue: 0, orders: 0 }));
+  
+  validOrders.forEach(order => {
+    if (order.createdAt) {
+      const date = new Date(order.createdAt);
+      // Optional: limit to only *this week's* dates for a true weekly chart
+      const dayIndex = date.getDay();
+      dailyData[dayIndex].revenue += order.total;
+      dailyData[dayIndex].orders += 1;
+    }
+  });
+
+  const formattedDailyData = [
+    dailyData[1], dailyData[2], dailyData[3], dailyData[4], 
+    dailyData[5], dailyData[6], dailyData[0]
+  ];
+
+  // Compute Monthly Data for this year
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyData = Array(12).fill(0).map((_, i) => ({ month: months[i], revenue: 0 }));
+
+  validOrders.forEach(order => {
+    if (order.createdAt) {
+      const date = new Date(order.createdAt);
+      if (date.getFullYear() === today.getFullYear()) {
+        monthlyData[date.getMonth()].revenue += order.total;
+      }
+    }
+  });
+
+  // Top Products computation
+  const productStats: Record<string, { name: string, category: string, sales: number, revenue: number }> = {};
+  
+  validOrders.forEach(order => {
+    if (order.items && order.items.length > 0) {
+      order.items.forEach((item: any) => {
+        const pName = item.product?.name || 'Unknown Product';
+        const pCategory = item.product?.category || 'General';
+        
+        if (!productStats[pName]) {
+          productStats[pName] = { name: pName, category: pCategory, sales: 0, revenue: 0 };
+        }
+        productStats[pName].sales += item.quantity;
+        productStats[pName].revenue += (item.price * item.quantity);
+      });
+    }
+  });
+
+  const topProducts = Object.values(productStats)
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 5)
+    .map((p, index) => ({ ...p, rank: index + 1 }));
+
+  if (loading) {
+    return <div className="p-8 text-white">Loading sales reports...</div>;
+  }
+
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -36,10 +112,10 @@ const SalesReport = () => {
       {/* Summary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Today\'s Revenue', value: '$8,900', change: '+12% vs yesterday' },
-          { label: 'This Month', value: '$138,752', change: '+22% vs last month' },
-          { label: 'Total Orders', value: '274', change: 'This week' },
-          { label: 'Avg Order Value', value: '$36.10', change: 'Per transaction' },
+          { label: 'Today\'s Revenue', value: `$${todaysRevenue.toLocaleString()}`, change: 'Today' },
+          { label: 'This Month', value: `$${thisMonthRevenue.toLocaleString()}`, change: 'Current Month' },
+          { label: 'Total Valid Orders', value: totalOrders.toLocaleString(), change: 'Overall' },
+          { label: 'Avg Order Value', value: `$${avgOrderValue.toFixed(2)}`, change: 'Per transaction' },
         ].map((s, i) => (
           <div key={i} className="bg-card p-5 rounded-2xl border border-border">
             <p className="text-muted-foreground text-xs mb-2">{s.label}</p>
@@ -52,9 +128,9 @@ const SalesReport = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Daily Revenue */}
         <div className="bg-card rounded-2xl border border-border p-6">
-          <h3 className="text-white font-semibold mb-4">Daily Revenue (This Week)</h3>
+          <h3 className="text-white font-semibold mb-4">Daily Revenue (By Day of Week)</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={dailyData}>
+            <BarChart data={formattedDailyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="day" tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}k`} />
@@ -87,19 +163,21 @@ const SalesReport = () => {
             <tr className="border-b border-border text-xs text-muted-foreground">
               <th className="text-left py-3 pr-4">#</th>
               <th className="text-left py-3 pr-4">Product</th>
-              <th className="text-left py-3 pr-4">Category</th>
               <th className="text-left py-3 pr-4">Units Sold</th>
               <th className="text-left py-3">Revenue</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {topProducts.map(p => (
+            {topProducts.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-8 text-center text-muted-foreground text-sm">No sales data found yet.</td>
+              </tr>
+            ) : topProducts.map(p => (
               <tr key={p.rank} className="hover:bg-white/5 transition-colors">
                 <td className="py-3 pr-4 text-muted-foreground font-bold text-sm">#{p.rank}</td>
                 <td className="py-3 pr-4 text-white text-sm font-medium">{p.name}</td>
-                <td className="py-3 pr-4 text-muted-foreground text-sm">{p.category}</td>
                 <td className="py-3 pr-4 text-white text-sm">{p.sales}</td>
-                <td className="py-3 text-primary font-semibold text-sm">{p.revenue}</td>
+                <td className="py-3 text-primary font-semibold text-sm">${p.revenue.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
