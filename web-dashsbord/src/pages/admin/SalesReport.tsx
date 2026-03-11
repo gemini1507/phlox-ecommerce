@@ -57,7 +57,7 @@ const SalesReport = () => {
             <BarChart data={dailyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="day" tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v/1000}k`} />
+              <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}k`} />
               <Tooltip {...chartStyle} formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']} />
               <Bar dataKey="revenue" fill="#a3e635" radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -71,7 +71,7 @@ const SalesReport = () => {
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="month" tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v/1000}k`} />
+              <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}k`} />
               <Tooltip {...chartStyle} formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']} />
               <Line type="monotone" dataKey="revenue" stroke="#a3e635" strokeWidth={3} dot={false} />
             </LineChart>
