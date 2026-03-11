@@ -25,10 +25,11 @@ const PORT = process.env.PORT || 4000;
 
 // ===== MIDDLEWARE =====
 // CORS: allow localhost in dev, all origins in production
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
-  credentials: true,
-}));
+app.use(cors(
+  process.env.NODE_ENV === 'production'
+    ? { origin: '*' }
+    : { origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'], credentials: true }
+));
 
 // Parse JSON body dari request
 app.use(express.json());
