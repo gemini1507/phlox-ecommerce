@@ -4,7 +4,7 @@
 // File ini dipakai di seluruh admin app untuk memanggil API
 // ================================================================
 
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 // Helper: ambil token dari localStorage
 const getToken = (): string | null => localStorage.getItem('token');
